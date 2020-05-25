@@ -16,6 +16,8 @@ window.Assignment_Four_Scene = window.classes.Assignment_Four_Scene =
             //        a cube instance's texture_coords after it is already created.
             const shapes = {
                 box: new Cube(),
+                cube_1: new Cube(),
+                cube_2: new Cube2(),
                 axis: new Axis_Arrows()
             };
             this.submit_shapes(context, shapes);
@@ -25,17 +27,38 @@ window.Assignment_Four_Scene = window.classes.Assignment_Four_Scene =
             //        you get to requirements 6 and 7 you will need different ones.
             this.materials =
                 {
-                    phong: context.get_instance(Phong_Shader).material(Color.of(1, 1, 0, 1))
+                    phong: context.get_instance(Phong_Shader).material(Color.of(1, 1, 0, 1)),
+                    pebbles: context.get_instance(Texture_Scroll_X).material(Color.of(0,0,0,1),
+                        {
+                            ambient: 1,
+                            texture: context.get_instance( "assets/pebbles.jpg", false ) //nearest = false
+
+                        }),
+                    pattern: context.get_instance(Texture_Rotate).material(Color.of(0,0,0,1),
+                        {
+                            ambient: 1,
+                            texture: context.get_instance( "assets/pattern.jpg", true ) //trilinear = true
+
+                        }),
                 };
 
             this.lights = [new Light(Vec.of(-5, 5, 5, 1), Color.of(0, 1, 1, 1), 100000)];
 
             // TODO:  Create any variables that needs to be remembered from frame to frame, such as for incremental movements over time.
+           this.rotate = false;
 
+           this.cube1 = Mat4.identity().times(Mat4.translation([-2, 0, 0]));
+
+           this.cube2 = Mat4.identity().times(Mat4.translation([2, 0, 0]));
+        }
+
+        start_stop() { 
+        this.rotate = !this.rotate; 
+        //console.log(this.rotate);
         }
 
         make_control_panel() { // TODO:  Implement requirement #5 using a key_triggered_button that responds to the 'c' key.
-
+             this.key_triggered_button( "Start/Stop Rotation", [ "c" ], this.start_stop );
         }
 
         display(graphics_state) {
@@ -44,6 +67,15 @@ window.Assignment_Four_Scene = window.classes.Assignment_Four_Scene =
 
             // TODO:  Draw the required boxes. Also update their stored matrices.
             this.shapes.axis.draw(graphics_state, Mat4.identity(), this.materials.phong);
+
+            if(this.rotate){
+                this.cube1 = this.cube1.times(Mat4.rotation(Math.PI*dt, Vec.of(0, 1, 0)));
+                this.cube2 = this.cube2.times(Mat4.rotation(Math.PI*dt*2/3, Vec.of(1, 0, 0)));
+
+            }
+
+            this.shapes.cube_1.draw(graphics_state, this.cube1, this.materials.pebbles);
+            this.shapes.cube_2.draw(graphics_state, this.cube2, this.materials.pattern);
         }
     };
 
@@ -59,7 +91,8 @@ class Texture_Scroll_X extends Phong_Shader {
             return;
           }                                 // If we get this far, calculate Smooth "Phong" Shading as opposed to Gouraud Shading.
                                             // Phong shading is not to be confused with the Phong Reflection Model.
-          vec4 tex_color = texture2D( texture, f_tex_coord );                         // Sample the texture image in the correct place.
+          vec4 tex_color = texture2D( texture, f_tex_coord + vec2(mod(animation_time,4.)*2.,0.));      
+                                 // Sample the texture image in the correct place.
                                                                                       // Compute an initial (ambient) color:
           if( USE_TEXTURE ) gl_FragColor = vec4( ( tex_color.xyz + shapeColor.xyz ) * ambient, shapeColor.w * tex_color.w ); 
           else gl_FragColor = vec4( shapeColor.xyz * ambient, shapeColor.w );
@@ -80,7 +113,9 @@ class Texture_Rotate extends Phong_Shader {
             return;
           }                                 // If we get this far, calculate Smooth "Phong" Shading as opposed to Gouraud Shading.
                                             // Phong shading is not to be confused with the Phong Reflection Model.
-          vec4 tex_color = texture2D( texture, f_tex_coord );                         // Sample the texture image in the correct place.
+          float rot = (3.1415926535/2.)*mod(animation_time,4.);
+          vec4 tex_color = texture2D( texture, (mat2(cos(rot), sin(rot), -1.*sin(rot), cos(rot)) * (f_tex_coord - vec2(.5,.5))) + vec2(.5,.5) );                           
+                                    // Sample the texture image in the correct place.
                                                                                       // Compute an initial (ambient) color:
           if( USE_TEXTURE ) gl_FragColor = vec4( ( tex_color.xyz + shapeColor.xyz ) * ambient, shapeColor.w * tex_color.w ); 
           else gl_FragColor = vec4( shapeColor.xyz * ambient, shapeColor.w );

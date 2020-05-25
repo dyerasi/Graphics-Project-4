@@ -30,6 +30,19 @@ class Square extends Shape              // A square, demonstrating two triangles
     }
 }
 
+window.Square2 = window.classes.Square2 =
+class Square2 extends Shape              // A square, demonstrating two triangles that share vertices.  On any planar surface, the interior 
+                                        // edges don't make any important seams.  In these cases there's no reason not to re-use data of
+{                                       // the common vertices between triangles.  This makes all the vertex arrays (position, normals, 
+  constructor()                         // etc) smaller and more cache friendly.
+    { super( "positions", "normals", "texture_coords" );                                   // Name the values we'll define per each vertex.
+      this.positions     .push( ...Vec.cast( [-1,-1,0], [1,-1,0], [-1,1,0], [1,1,0] ) );   // Specify the 4 square corner locations.
+      this.normals       .push( ...Vec.cast( [0,0,1],   [0,0,1],  [0,0,1],  [0,0,1] ) );   // Match those up with normal vectors.
+      this.texture_coords.push( ...Vec.cast( [0,0],     [2,0],    [0,2],    [2,2]   ) );   // make texture half zoomed out
+      this.indices       .push( 0, 1, 2,     1, 3, 2 );                   // Two triangles this time, indexing into four distinct vertices.
+    }
+}
+
 
 window.Tetrahedron = window.classes.Tetrahedron =
 class Tetrahedron extends Shape                       // The Tetrahedron shape demonstrates flat vs smooth shading (a boolean argument 
@@ -99,6 +112,20 @@ class Cube extends Shape    // A cube inserts six square strips into its arrays.
                          .times( Mat4.rotation( Math.PI * j - ( i == 1 ? Math.PI/2 : 0 ), Vec.of( 0, 1, 0 ) ) )
                          .times( Mat4.translation([ 0, 0, 1 ]) );
           Square.insert_transformed_copy_into( this, [], square_transform );
+        }
+    }
+}
+
+window.Cube2 = window.classes.Cube2 =
+class Cube2 extends Shape    // A cube inserts six square strips into its arrays.
+{ constructor()  
+    { super( "positions", "normals", "texture_coords" );
+      for( var i = 0; i < 3; i++ )                    
+        for( var j = 0; j < 2; j++ )
+        { var square_transform = Mat4.rotation( i == 0 ? Math.PI/2 : 0, Vec.of(1, 0, 0) )
+                         .times( Mat4.rotation( Math.PI * j - ( i == 1 ? Math.PI/2 : 0 ), Vec.of( 0, 1, 0 ) ) )
+                         .times( Mat4.translation([ 0, 0, 1 ]) );
+          Square2.insert_transformed_copy_into( this, [], square_transform );
         }
     }
 }
